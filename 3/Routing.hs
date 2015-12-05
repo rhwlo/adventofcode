@@ -1,19 +1,9 @@
-module Routing (assistedDelivery, countVisitedHouses, distributeList) where
+module Routing (deliverWithWorkers) where
 
 import qualified Data.Set as DS
 
-assistedDelivery :: [Char] -> Int
-assistedDelivery = countVisitedHouses . joinDirections . distributeList 2
-  where
-    joinDirections (x:[]) = x
-    joinDirections (x:y) = x ++ (invertDirections x) ++ (joinDirections y)
-    invertDirections = reverse . map invertStep
-      where
-        invertStep '^' = 'v'
-        invertStep 'v' = '^'
-        invertStep '<' = '>'
-        invertStep '>' = '<'
-        invertStep  c  =  c
+deliverWithWorkers :: Int -> [Char] -> Int
+deliverWithWorkers workers = countVisitedHouses . distributeList workers
 
 distributeList :: Int -> [a] -> [[a]]
 distributeList n xs = let
@@ -28,9 +18,11 @@ distributeList n xs = let
     distribute _ (ys, []) = ys
     distribute m (c:cs, y:ys) = (y:c):(distribute (m - 1) (cs, ys))
 
-countVisitedHouses :: [Char] -> Int
-countVisitedHouses = length . uncurry DS.insert . foldl getHouses ((0,0), DS.empty)
+countVisitedHouses :: [[Char]] -> Int
+countVisitedHouses = length . DS.unions . map visitedSetFromDirections
   where
+    visitedSetFromDirections :: [Char] -> DS.Set (Int, Int)
+    visitedSetFromDirections = uncurry DS.insert . foldl getHouses ((0,0), DS.empty)
     getHouses :: ((Int, Int), DS.Set (Int, Int)) -> Char -> ((Int, Int), DS.Set (Int, Int))
     getHouses ((x, y), visited) direction = let
         newPosition = case direction of
